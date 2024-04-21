@@ -1,0 +1,39 @@
+\section{Introduction}
+In the realm of concurrent computing, the efficient management of shared resources stands as a paramount challenge. Range locks, a synchronization mechanism designed to enable parallelism for non-overlapping
+ranges. Originally designed for file systems, they have received considerable attention in the Linux kernel community for their potential to solving the mmap_lock scalability problem\cite{mmapLock2022}. These locks provide a means for multiple threads or processes to simultaneously access disjoint segments of a shared resource, thereby improving system performance and concurrency.
+
+
+\section{Motivation}
+The increasing demand for scalable and high-performance distributed systems necessitates efficient concurrency control mechanisms. Existing locking schemes struggle to handle overlapping data ranges, leading to contention, synchronization overheads, and performance bottlenecks. A scalable range locking mechanism could significantly enhance the scalability and performance of distributed systems by providing efficient management of concurrent accesses to data ranges.
+
+\section{Related Work}
+Previous research has explored various approaches to concurrency control in distributed systems. Traditional locking mechanisms, such as fine-grained and coarse-grained locks, have been widely studied but often face scalability limitations. More recent approaches, such as distributed locking protocols and range-based access management techniques, offer promising solutions but may lack efficiency and scalability in certain scenarios.
+
+\section{Approach}
+The proposed approach involves designing and implementing a scalable range locking mechanism tailored for distributed systems. The key components of the approach include:
+\begin{itemize}
+    \item Designing an algorithm that efficiently manages concurrent accesses to data ranges while minimizing contention and synchronization overheads.
+    \item Leveraging distributed data structures and decentralized coordination techniques to ensure scalability and fault tolerance.
+    \item Developing a flexible and easy-to-use API for integrating the range locking mechanism into existing distributed systems seamlessly.
+\end{itemize}
+
+\section{Evaluation}
+The proposed approach will be evaluated through extensive experimentation and benchmarking under various workload scenarios. The evaluation criteria include:
+\begin{itemize}
+    \item Performance: Measure the scalability and throughput of the range locking mechanism under increasing load and concurrent accesses.
+    \item Correctness: Validate the consistency and correctness of data accesses, especially in scenarios involving overlapping data ranges and concurrent operations.
+    \item Scalability: Assess the scalability limits of the range locking mechanism in terms of the number of clients, data range sizes, and system resources.
+    \item Comparison: Compare the performance and scalability of the proposed mechanism against existing locking schemes and state-of-the-art approaches.
+\end{itemize}
+
+\section{Expected Outcome}
+The expected outcome of this research is a scalable range locking mechanism that significantly improves the efficiency and scalability of concurrency control in distributed systems. The findings from the evaluation will provide insights into the performance characteristics, scalability limits, and potential trade-offs of the proposed mechanism, contributing to the advancement of distributed computing research and practice.
+
+\section{Resources}
+For the evaluation of the proposed mechanism, the following resources are required:
+\begin{itemize}
+    \item Budget of 20 cores and 200GB of RAM over two months for experimentation and benchmarking.
+    \item Access to a server with NVIDIA GPU for one week to evaluate performance optimizations.
+    \item Access to a 112 core machine for two weeks to assess scalability limits.
+\end{itemize}
+These resources are considered reasonable for conducting thorough evaluations and ensuring the feasibility and effectiveness of the proposed approach.
