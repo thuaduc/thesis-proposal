@@ -1,9 +1,11 @@
 \section{Introduction}
 
-A scalable range lock is a synchronization mechanism designed to address the problem of multiple writers attempting to modify different parts of the same file. Unlike conventional methods that rely on a singular lock for the entire file, range locks partition the resource in a strategic manner, enabling writers to work independently on disjointed segments. This segmentation not only alleviates the synchronization bottleneck commonly encountered in traditional approaches but also fosters enhanced scalability and performance.
+A scalable range lock is a synchronization construct designed to address the problem of multiple writers attempting to modify different parts of the same file. Unlike conventional methods that rely on a singular lock for the entire file, range locks enables concurrent access to disjoint parts of a shared resource, thus allow parallelism for writers working on different parts of the same file and solve the bottleneck of using singular lock.
 
 \section{Motivation}
-Recently, there has been a surge of interest in range locking techniques\parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}, with a notable example being the Linux kernel community's consideration of using range locking techniques to replace the bottleneck of the \texttt{mmap\_lock}. The \texttt{mmap\_lock} is a reader-writer semaphore that controls access to the whole \texttt{mm\_struct}\parencite{mmstruct2023} and protect VMAs (Virtual memory area). Because this lock cover the whole \texttt{mm\_struct}, it does not allow to have paralell update and page fault, event when it happend in different VMAs. It is therefore a coarse-grained lock that creates contention in the memory management subsystem. There have been several attempts to overcome the scalability issues of \texttt{mmap\_lock}, but the problem is far from solved\parencite{mmapLock2022}.
+Recently, there has been an increase in interest in range locking techniques \parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}, with a notable example being the Linux kernel community's consideration of using range locking techniques to replace the bottleneck of the \texttt{mmap\_lock}. The \texttt{mmap\_lock} is a reader-writer semaphore that controls access to the whole \texttt{mm\_struct}\parencite{mmstruct2023} and protect VMAs (Virtual memory area). Because this lock cover the whole \texttt{mm\_struct}, it does not allow to have paralell update and page fault, event when it happend in different VMAs. It is therefore a coarse-grained lock that creates contention in the memory management subsystem. There have been several attempts to overcome the scalability issues of \texttt{mmap\_lock}, but the problem is far from solved\parencite{mmapLock2022}.
+
+In the context of database management systems, range locks could be beneficial in scenarios involving large databases and indexes. For instance, the standard hierarchical locking approach locks the entire index or an index partition before locking individual pages or keys. However, with the exponential growth in data sizes, locking at the index level may become too coarse-grained for concurrent transactions\parencite{Graefe2020}. This can lead to significant memory overhead and performance bottlenecks associated with acquiring and releasing locks. Range locks offer a solution to this problem by focusing on key ranges rather than entire indexes. This reduces contention, enhances concurrency and allows multiple transactions to operate concurrently on disjoint key ranges. 
 
 \section{Related Work}
 Previous research has explored various approaches to a scalable range lock. The current implementation of area locking in the kernel uses an interval tree, which keeps track of the areas that have been acquired and requested, and an internal spin lock to protect it. This spin lock becomes a point of contention on its own when the range lock is frequently acquired\parencite{scalableRangeLock2020}.
@@ -11,10 +13,10 @@ Previous research has explored various approaches to a scalable range lock. The 
 A different approach to range locking is to build it based on a liked list instead of a range tree, where each node represents an acquired range\parencite{scalableRangeLock2020}. Although using a list makes it archivable to maintain lock-less fashion, inserting and searching the list might be less efficient.
 
 \section{Approach}
-The proposed approach involves designing and implementing a scalable range locking mechanism tailored for distributed systems. The key components of the approach include:
+The proposed approach involves designing and implementing ab efficient scalable range locking mechanism. The key components of the approach include:
 \begin{itemize}
     \item Designing an algorithm that safely and efficiently locks arbitrary ranges of a shared resources.
-    \item Solving the problem with both interval tree and linked-list approaches to find the optimize solution.
+    \item Approaching the problem with both interval tree and linked-list approaches to find the optimize solution.
     \item Developing a flexible and easy-to-use API for integrating the range lock into existing distributed systems seamlessly.
 \end{itemize}
 
