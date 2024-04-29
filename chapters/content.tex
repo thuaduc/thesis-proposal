@@ -1,40 +1,30 @@
 \section{Introduction}
 
-A scalable range lock is a synchronization construct designed to address the problem of multiple writers attempting to modify different parts of the same file. Unlike conventional methods that rely on a singular lock for the entire file, range locks enables concurrent access to disjoint parts of a shared resource, thus allow parallelism for writers working on different parts of the same file and solve the bottleneck of using singular lock.
+A concurrent range lock is a dynamic fine-grained lock abstraction. It is designed to address the problem of multiple writers attempting to modify different parts of the same file. Unlike conventional methods that rely on a singular lock for the entire file, range lock enables concurrent access to disjoint parts of the file, thus allowing parallelism for writers and solving the bottleneck of using a singular lock. 
 
 \section{Motivation}
-Recently, there has been an increase in interest in range locking techniques \parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}, with a notable example being the Linux kernel community's consideration of using range locking techniques to replace the bottleneck of the \texttt{mmap\_lock}. The \texttt{mmap\_lock} is a reader-writer semaphore that controls access to the whole \texttt{mm\_struct}\parencite{mmstruct2023} and protect VMAs (Virtual memory area). Because this lock cover the whole \texttt{mm\_struct}, it does not allow to have paralell update and page fault, event when it happend in different VMAs. It is therefore a coarse-grained lock that creates contention in the memory management subsystem. There have been several attempts to overcome the scalability issues of \texttt{mmap\_lock}, but the problem is far from solved\parencite{mmapLock2022}.
+Recently, there has been an increase in interest in range locking techniques \parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}. One notable example is that the Linux kernel community is considering using range-locking techniques to replace the \texttt{mmap\_lock}. The \texttt{mmap\_lock} uses a per-process semaphore to control access to the whole \texttt{mm\_struct}\parencite{mmstruct2023} and serialize changes to address spaces. There have been several attempts to overcome the scalability issues of \texttt{mmap\_lock}, but the problem is far from solved\parencite{mmapLock2022}.
 
-In the context of database management systems, range locks could be beneficial in scenarios involving large databases and indexes. For instance, the standard hierarchical locking approach locks the entire index or an index partition before locking individual pages or keys. However, with the exponential growth in data sizes, locking at the index level may become too coarse-grained for concurrent transactions\parencite{Graefe2020}. This can lead to significant memory overhead and performance bottlenecks associated with acquiring and releasing locks. Range locks offer a solution to this problem by focusing on key ranges rather than entire indexes. This reduces contention, enhances concurrency and allows multiple transactions to operate concurrently on disjoint key ranges. 
+In database management systems context, range locks also offer a solution to the issue of coarse-grained locking in large databases and indexes. Instead of locking entire indexes, range locks focus on key ranges, reducing contention and improving concurrency. This allows multiple transactions to operate concurrently on separate key ranges, alleviating memory overhead and lock acquisition bottlenecks \parencite{Graefe2020}.
 
 \section{Related Work}
-Previous research has explored various approaches to a scalable range lock. The current implementation of area locking in the kernel uses an interval tree, which keeps track of the areas that have been acquired and requested, and an internal spin lock to protect it. This spin lock becomes a point of contention on its own when the range lock is frequently acquired\parencite{scalableRangeLock2020}.
+Previous research has explored various approaches to scalable range lock. One approach uses a skip list combined with a spin lock to dynamically maintain currently locked ranges\parencite{migrationWM2023}. The skip list is not as heavy as an interval tree or segment tree, but is still sufficient for intensive searches for existing overlapping ranges.
 
-A different approach to range locking is to build it based on a liked list instead of a range tree, where each node represents an acquired range\parencite{scalableRangeLock2020}. Although using a list makes it archivable to maintain lock-less fashion, inserting and searching the list might be less efficient.
+A different approach to range lock is to build it based on a linked-list instead of a range tree, where each node represents an acquired range\parencite{scalableRangeLock2020}. Although using a list makes it achievable to maintain lock-less range lock, inserting and searching operations on the linked list are likely less efficient.
 
 \section{Approach}
-The proposed approach involves designing and implementing ab efficient scalable range locking mechanism. The key components of the approach include:
-\begin{itemize}
-    \item Designing an algorithm that safely and efficiently locks arbitrary ranges of a shared resources.
-    \item Approaching the problem with both interval tree and linked-list approaches to find the optimize solution.
-    \item Developing a flexible and easy-to-use API for integrating the range lock into existing distributed systems seamlessly.
-\end{itemize}
+The proposed approach is to design and implement a concurrent scope lock based on a probabilistic concurrent skip list data structure. Unlike conventional skip list, the proposed approach would use the requesting range \texttt{[start, end]} as the key per node and also utilize the per-node lock technique. This method will improve concurrency and performance while keeping the structure secure.
 
 \section{Evaluation}
-The proposed approach will be evaluated through extensive experimentation and benchmark under various workload scenarios. The evaluation criteria include:
+The proposed approach will be evaluated under these evaluation criteria:
 \begin{itemize}
     \item Performance: It is necessary to measure the performance and throughput of the range locking mechanism under increasing load and concurrent accesses.
-    \item Correctness: It is also important to validate the consistency and correctness of data accesses, especially in scenarios involving overlapping data ranges and concurrent operations.
-    \item Scalability:  The scalability limits of the range locking mechanism must be assessed in terms of the number of readers and writers, data range sizes, and system resources.
-    \item Comparison: A comparison must be made between the performance and scalability of the proposed mechanism and those of existing locking schemes and state-of-the-art approaches.
+    \item Correctness: It is also crucial to validate the consistency and correctness of data accesses, especially in scenarios involving overlapping data ranges and concurrent operations.
+    \item Comparison: A comparison must be made between the performance of the proposed solution and those of existing state-of-the-art approaches.
 \end{itemize}
 
 \section{Expected Outcome}
-The expected outcome of this research is a scalable range locking mechanism that significantly improves the efficiency and scalability of the existed range locks. The findings from the evaluation will provide insights into the performance characteristics, scalability limits, and potential trade-offs of the proposed mechanism, contributing to the advancement of distributed computing research and practice.
+The expected outcome of this research is a scalable range-locking mechanism that improves the efficiency of the existing range locks. The findings from the evaluation will provide insights into the performance characteristics, and potential trade-offs of the proposed mechanism, contributing to the advancement of distributed computing research.
 
 \section{Resources}
-The following resources are required to evaluate the proposed mechanism:
-\begin{itemize}
-    \item Budget of 32 cores and 32GB of RAM for one month for experimentation and benchmarking.
-\end{itemize}
-Resources are critical when evaluating performance under multi-threaded conditions. With such resources, thorough evaluations can be performed to understand how the region locking mechanism performs under heavy contention. Utilizing all available cores and memory allows the implementation to be pushed to its limits and gain insight into its behavior in complex multi-threaded environments.
+A thorough evaluation of the proposed mechanism requires a budget of 32 cores and 32 GB of RAM for one month. These resources allow for exhaustive testing under heavy contention, pushing the range lock to its limits and revealing its performance in multithreaded scenarios.
