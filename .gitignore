@@ -5,4 +5,4 @@ build/*
 main.*
 !main.tex
 
-.vscode
+.vscodemak
