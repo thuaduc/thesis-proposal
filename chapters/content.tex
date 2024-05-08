@@ -1,34 +1,40 @@
 \section{Introduction}
 
-Concurrent range locks offer a more refined approach to managing file access than traditional methods. Instead of a single lock for the entire file, they allow fine-grained control by dividing it into small parts. This approach enables multiple writers to modify different parts simultaneously, overcoming the limitations and bottlenecks of single-lock methods. Consequently, concurrent range locks foster parallelism among writers, resulting in a marked enhancement in overall efficiency.
+Range locks acquire exclusive locks on consecutive values within a specified range. They play a vital role in filesystems, operating systems, and databases\parencite{readerWriterLocks2017, lockingBTreeIndex2020, concurrentFileSystem2021}. Unlike traditional single-locking methods, range locks offer a more refined approach to resource access management. By dividing a shared resource into smaller segments, range locks allow multiple writers to modify different segments simultaneously. This approach overcomes the limitations and bottlenecks of single-lock approaches and fosters parallelism among writers. Consequently, range locks enhance overall efficiency within these critical computing systems.
 
 \section{Motivation}
 Recently, there has been an increase in interest in range-locking techniques. One notable example is that the Linux kernel community is considering using range-locking techniques to replace the \texttt{mmap\_lock} \parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}. The \texttt{mmap\_lock} uses a per-process semaphore to control access to the whole \texttt{mm\_struct} \parencite{mmstruct2023} and serialize changes to address spaces.  Despite previous efforts to overcome the scalability issues of \texttt{mmap\_lock}, a resolution is yet to be found \parencite{mmapLock2022}.
 
-In the context of database management systems, range locks also offer a solution to the issue of coarse-grained locking in large databases and indexes. With disk sizes approaching 1TB and the number of pages and indexes increasing exponentially, locking the entire index is no longer an option. As a solution to this problem, range lock focuses on key ranges, thus allowing multiple transactions to operate concurrently on separate key ranges, reducing memory overhead and lock acquisition bottlenecks \parencite{Graefe2020}.
+In the context of database management systems, range locks also offer a solution to the issue of coarse-grained locking in large databases and indexes. With the storage sizes and the number of pages and indexes increasing exponentially, there are better options than locking the entire index, considering that such a coarse-grained locking mechanism inherently blocks other transactions from progressing, leading to poor throughput and high latency. As a solution to this problem, range locks focus on key ranges, thus allowing multiple transactions to operate concurrently on separate key ranges, reducing memory overhead and lock acquisition bottlenecks \parencite{lockingBTreeIndex2020}.
 
 \section{Related Work}
-Previous research has explored various approaches to scalable range locking \parencite{linuxRangeLockImpl2013, migrationWM2023, scalableRangeLock2020}. The current implementation in the Linux kernel uses a range tree \parencite{linuxRangeLockImpl2013} that keeps track of acquired ranges and an internal spin lock to protect it. Since every range request relies on this single spinlock, it becomes a point of contention. 
+Previous research has explored various approaches to scalable range locks \parencite{linuxRangeLockImpl2013, migrationWM2023, scalableRangeLock2020}. The current implementation of range lock in the Linux kernel uses a range tree that keeps track of acquired ranges and an internal spin lock to protect it\parencite{linuxRangeLockImpl2013}. Since every range request relies on this single spinlock, it becomes a point of contention. 
 
-One alternative methodology of the Linux kernel implementation uses a skip list and a spinlock to maintain locked ranges \parencite{migrationWM2023}. This method distinguishes itself by utilizing the skip list, which, in comparison to the interval tree, offers a more lightweight and efficient mechanism for intensive, thorough searches for overlapping ranges. Despite these improvements, the issue of contention points remains an unresolved challenge.
+Song et al. try to improve the Linux kernel's implementation by combining a skip list with a spinlock to manage locked ranges\parencite{migrationWM2023}. This technique leverages the skip list, which is more lightweight and efficient than the interval tree and can still conduct intensive searches for overlapping ranges. Despite these advancements, the problem of contention points still requires resolution.
 
 In another research, Kogan et al. designed a range lock based on a linked list, where each node represents an acquired range \parencite{scalableRangeLock2020}. By using a linked list, this approach can maintain a lock-free range lock, thus solving the bottleneck problem. However, insertion and lookup operations on the linked list are less efficient than tree-like structures. 
 
 \newpage
 
 \section{Approach}
-In this research's scope, we propose a new concurrent range lock design. Like Song et al.'s research \parencite{linuxRangeLockImpl2013}, our range lock is based on a probabilistic concurrent skip list and uses the requesting range \texttt{[start, end]} as the key per node. However, it utilizes the per-node lock technique instead of an interval lock. This method not only addresses the bottleneck problem of the spinlock-based range lock but also maintains the lock's high level of performance. 
+In this research's scope, we propose a new concurrent range lock design that leverages a probabilistic concurrent skip list\parencite{herlihy2006provably, herlihy2020art}. It consists of two main functions:
+\begin{itemize}
+    \item \textbf{try\_lock}: The \texttt{try\_lock} function searches for the required address range \texttt{([start, start+len])} in the skip list. If an overlapping range exists, indicating another thread is modifying that range, the requesting thread must wait and retry. If not, the range is added to the list, signaling that the range is reserved.
+    \item \textbf{release\_lock}: The \texttt{release\_lock} function releases the lock by locating the address in the skip list and removing the corresponding range. 
+\end{itemize} 
+
+Our range lock design also utilizes the per-node lock instead of an interval lock, thus addressing the bottleneck problem of the spinlock-based range lock and maintaining the lock's high level of performance. 
 
 \section{Evaluation}
 The proposed approach will be evaluated under these evaluation criteria:
 \begin{itemize}
-    \item \textbf{Performance:} It is necessary to measure the performance and throughput of the range locking mechanism under increasing load and concurrent accesses.
-    \item \textbf{Correctness:} It is also crucial to validate the consistency and correctness of data accesses, especially in scenarios involving overlapping data ranges and concurrent operations.
-    \item \textbf{Comparison:} A comparison must be made between the performance of the proposed solution and those of existing state-of-the-art approaches.
+    \item \textbf{Performance:} We will test the range lock mechanism under increasing load and concurrent accesses to measure its performance.
+    \item \textbf{Correctness:} We will ensure the consistency and correctness of data accesses, especially when there are overlapping data ranges and concurrent operations.
+    \item \textbf{Comparison:} We will compare the performance of the proposed solution with existing state-of-the-art approaches.
 \end{itemize}
 
 \section{Expected Outcome}
-The expected outcome of this research is a scalable range-locking mechanism that avoids bottlenecks and improves the efficiency of the existing range locks. The findings from the evaluation will provide insights into the performance characteristics and potential trade-offs of the proposed mechanism, contributing to the advancement of distributed computing research.
+We aim to develop a scalable range lock that performs better than the existing range locks. The evaluation results will provide insights into the performance characteristics and potential trade-offs of the proposed mechanism.
 
 \section{Resources}
-A thorough evaluation of the proposed mechanism requires a budget of 32 cores and 32 GB of RAM for one month. These resources allow for exhaustive testing under heavy contention, pushing the range lock to its limits and revealing its performance in multithreaded scenarios.
+We will need 32 cores and 32 GB of RAM for one month. These resources allow us to perform thorough tests under heavy contention and multithreaded scenarios.
