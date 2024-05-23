@@ -1,28 +1,28 @@
 \section{Introduction}
-In many popular systems, including database, file, and operating systems, acquiring exclusive locks on continuous values is crucial, as highlighted in several studies \cite{readerWriterLocks2017, graefe2007hierarchical, lee2021concurrent, gao2023citron, lee2019write}. A notable implementation of this mechanism is the range lock~\parencite{gao2023citron, kogan2020scalable}.
+In many popular systems, including database, file, and operating systems, acquiring exclusive locks on continuous values is crucial, as highlighted in several studies~\parencite{lomet1993key, readerWriterLocks2017, graefe2007hierarchical, lee2021concurrent, gao2023citron, lee2019write}. One notable implementation of this mechanism is the range lock~\parencite{gao2023citron, kogan2020scalable}.
 Range locks offer a more refined approach than the traditional single-lock technique -- by partitioning a shared resource into multiple arbitrary-sized segments, which can be acquired exclusively by different processes.
 This strategy effectively addresses the drawbacks and bottlenecks associated with single-lock methods, significantly improving the performance.
 
 \section{Motivation}
 
 \textbf{Virtual-memory needs range locking.}
-The Linux kernel community has recently been exploring the adoption of range-locking techniques as a potential replacement for the \texttt{mmap\_lock} \parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}. The \texttt{mmap\_lock} uses a per-process semaphore to control access to the whole \texttt{mm\_struct} \parencite{mmstruct2023} and serialize changes to address spaces. Despite previous efforts to overcome the scalability issues of \texttt{mmap\_lock}, a resolution is yet to be found \parencite{mmapLock2022}.
+The Linux kernel community recently tried to use range-locking to improve the scalability issue of \texttt{mmap\_lock}~\parencite{readerWriterLocks2017, mapleTree2021, mmapLock2022}. The \texttt{mmap\_lock} uses a per-process semaphore to control access to the whole \texttt{mm\_struct}~\parencite{mmstruct2023} and serialize changes to address spaces. Despite previous efforts to overcome the scalability issues of \texttt{mmap\_lock}, a resolution is yet to be found~\parencite{mmapLock2022}.
 
 \textbf{Range locking in DBMS.}
 As database sizes increase exponentially, locking the entire database becomes impractical.
-Such a coarse-grained locking mechanism prevents concurrent transactions from progressing, resulting in poor throughput and high latency. 
-Previous approaches, including hierarchical locking ~\parencite{graefe2007hierarchical}, are complex and tightly coupled with lock-based concurrency control \parencite{andy2022database}.
-As a result, these techniques are not applicable for general DBMS operations -- such as variable-sized page allocation -- hence, a new technique is desirable.
+Such a coarse-grained locking mechanism prevents concurrent transactions from progressing, resulting in poor throughput and high latency.
+The previous key-range locking in DBMS~\parencite{graefe2007hierarchical, andy2022database} is complex and tightly coupled with lock-based concurrency control protocols~\parencite{andy2022database}.
+As a result, this technique is not applicable for general DBMS operations -- such as variable-sized page allocation -- hence, a new technique is desirable.
 
 \section{Related Work}
-Previous research has explored various approaches to range lock \parencite{linuxRangeLockImpl2013, song2013parallelizing, kogan2020scalable}. The current implementation of range lock in the Linux kernel uses a range tree that keeps track of acquired ranges and an internal spin lock to protect it \parencite{linuxRangeLockImpl2013}. Since every range request relies on this single spinlock, it becomes a point of contention. 
+Previous research has explored various approaches to range lock~\parencite{linuxRangeLockImpl2013, song2013parallelizing, kogan2020scalable}. The current implementation of range lock in the Linux kernel uses a range tree that keeps track of acquired ranges and an internal spin lock to protect it~\parencite{linuxRangeLockImpl2013}. Since every range request relies on this single spinlock, it becomes a point of contention. 
 
 Song et al.~\parencite{song2013parallelizing} try to improve the Linux kernel's implementation by combining a skip list with a spinlock to manage locked ranges. This technique leverages the skip list, which is more lightweight and efficient than the interval tree and can still conduct intensive searches for overlapping ranges. Despite these advancements, the problem of contention points still requires resolution.
 
 In another research, Kogan et al.~\cite{kogan2020scalable} designed a range lock based on a concurrent linked list, where each node represents an acquired range. This design achieves a lock-free mechanism that effectively addresses existing range locks' shortcomings. However, the linked list's insertion and lookup operations are less efficient than tree-like structures.
 
 \section{Approach}
-In this research's scope, we propose a new concurrent range-locking design that leverages a probabilistic concurrent skip list \parencite{herlihy2006provably, herlihy2020art}. It consists of two main functions:
+In this research's scope, we propose a new concurrent range-locking design that leverages a probabilistic concurrent skip list~\parencite{herlihy2006provably, herlihy2020art}. It consists of two main functions:
 \begin{itemize}
     \item \textbf{try\_lock}: The \texttt{try\_lock} function searches for the required range \texttt{[start, start+len)} in the skip list. If an overlapping range exists, indicating another thread is modifying that range, the requesting thread must wait and retry. If not, the range is added to the list, signaling that the range is reserved.
     \item \textbf{release\_lock}: The \texttt{release\_lock} function releases the lock by finding the address range in the skip list and removing it accordingly.
