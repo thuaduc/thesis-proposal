@@ -11,7 +11,7 @@ The Linux kernel community recently tried to use range-locking to improve the sc
 \textbf{Range locking in DBMS.}
 As database sizes increase exponentially, locking the entire database becomes impractical.
 Such a coarse-grained locking mechanism prevents concurrent transactions from progressing, resulting in poor throughput and high latency.
-The previous key-range locking in DBMS~\parencite{graefe2007hierarchical, andy2022database} is complex and tightly coupled with lock-based concurrency control protocols~\parencite{andy2022database}.
+The previous key-range locking in DBMS is complex and tightly coupled with lock-based concurrency control protocols~\parencite{graefe2007hierarchical, andy2022database}.
 As a result, this technique is not applicable for general DBMS operations -- such as variable-sized page allocation -- hence, a new technique is desirable.
 
 \section{Related Work}
